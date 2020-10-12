@@ -1,86 +1,113 @@
 package com.nashiroaoi.scrshare;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
+import net.minecraft.client.Minecraft;
+import net.minecraftforge.client.event.ScreenshotEvent;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.InterModComms;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.InterModEnqueueEvent;
 import net.minecraftforge.fml.event.lifecycle.InterModProcessEvent;
-import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import com.google.gson.Gson;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.List;
 
-import java.util.stream.Collectors;
-
-// The value here should match an entry in the META-INF/mods.toml file
 @Mod(ScrShare.MOD_ID)
-public class ScrShare
-{
+public class ScrShare {
     public static final String MOD_ID = "scrshare";
-    // Directly reference a log4j logger.
     public static final Logger LOGGER = LogManager.getLogger();
-
+    public static final HttpClient httpclient = HttpClients.createDefault();
+    public static Minecraft mc = Minecraft.getInstance();
 
     public ScrShare() {
-        // Register the setup method for modloading
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::setup);
-        // Register the enqueueIMC method for modloading
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::enqueueIMC);
-        // Register the processIMC method for modloading
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::processIMC);
-        // Register the doClientStuff method for modloading
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::doClientStuff);
 
-        // Register ourselves for server and other game events we are interested in
         MinecraftForge.EVENT_BUS.register(this);
+
     }
 
-    private void setup(final FMLCommonSetupEvent event)
-    {
-        // some preinit code
-        LOGGER.info("HELLO FROM PREINIT");
-        LOGGER.info("DIRT BLOCK >> {}", Blocks.DIRT.getRegistryName());
+    private void setup(final FMLCommonSetupEvent event) {
     }
 
     private void doClientStuff(final FMLClientSetupEvent event) {
-        // do something that can only be done on the client
         LOGGER.info("Got game settings {}", event.getMinecraftSupplier().get().gameSettings);
     }
 
-    private void enqueueIMC(final InterModEnqueueEvent event)
-    {
-        // some example code to dispatch IMC to another mod
-        InterModComms.sendTo("examplemod", "helloworld", () -> { LOGGER.info("Hello world from the MDK"); return "Hello world";});
+    private void enqueueIMC(final InterModEnqueueEvent event) {
     }
 
-    private void processIMC(final InterModProcessEvent event)
-    {
-        // some example code to receive and process InterModComms from other mods
-        LOGGER.info("Got IMC {}", event.getIMCStream().
-                map(m->m.getMessageSupplier().get()).
-                collect(Collectors.toList()));
+    private void processIMC(final InterModProcessEvent event) {
     }
-    // You can use SubscribeEvent and let the Event Bus discover methods to call
+
     @SubscribeEvent
-    public void onServerStarting(FMLServerStartingEvent event) {
-        // do something when the server starts
-        LOGGER.info("HELLO from server starting");
+    public void onScreenShot(ScreenshotEvent event) throws IOException {
+        byte[] data = event.getImage().getBytes();
+        String base64str = Base64.getEncoder().encodeToString(data);
+        imgurPoster(base64str);
     }
 
-    // You can use EventBusSubscriber to automatically subscribe events on the contained class (this is subscribing to the MOD
-    // Event bus for receiving Registry Events)
-    @Mod.EventBusSubscriber(bus=Mod.EventBusSubscriber.Bus.MOD)
-    public static class RegistryEvents {
-        @SubscribeEvent
-        public static void onBlocksRegistry(final RegistryEvent.Register<Block> blockRegistryEvent) {
-            // register a new block here
-            LOGGER.info("HELLO from Register Block");
+    private void imgurPoster(String base64str) throws IOException {
+        HttpPost httppost = new HttpPost("https://api.imgur.com/3/image");
+        httppost.setHeader("Authorization", "Client-ID aa5c2230d959d2e");
+        List<NameValuePair> params = new ArrayList<>(2);
+        params.add(new BasicNameValuePair("image", base64str));
+        params.add(new BasicNameValuePair("type", "base64"));
+        httppost.setEntity(new UrlEncodedFormEntity(params, "UTF-8"));
+        HttpResponse responsePost = httpclient.execute(httppost);
+        BufferedReader reader = new BufferedReader(new InputStreamReader(responsePost.getEntity().getContent()));
+        StringBuilder sb = new StringBuilder();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            sb.append(line);
         }
+        String getResponseString = sb.toString();
+        Model model = new Gson().fromJson(getResponseString, Model.class);
+        if(model.success){
+            String url = model.data.link;
+            LOGGER.info(url);
+        }
+        else {
+            LOGGER.info(model.status);
+        }
+
     }
+}
+class Data{
+    @SerializedName("link")
+    @Expose
+    public String link;
+
+}
+
+class Model {
+
+    @SerializedName("data")
+    @Expose
+    public Data data;
+    @SerializedName("success")
+    @Expose
+    public Boolean success;
+    @SerializedName("status")
+    @Expose
+    public Integer status;
 }

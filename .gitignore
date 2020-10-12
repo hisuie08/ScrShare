@@ -2,6 +2,7 @@
 .idea
 build
 gradle
+logs
 run
 scr/test/
 changelog.txt
