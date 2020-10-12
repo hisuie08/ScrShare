@@ -74,7 +74,6 @@ public class ScrShare {
         else {
             event.setResultMessage(ITextComponent.func_244388_a("Sorry, Upload Failed. Try again later."));
         }
-
     }
 
 
