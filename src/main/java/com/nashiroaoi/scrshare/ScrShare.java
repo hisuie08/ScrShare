@@ -2,6 +2,8 @@ package com.nashiroaoi.scrshare;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.NewChatGui;
 import net.minecraft.util.text.*;
 import net.minecraft.util.text.event.ClickEvent;
 import net.minecraftforge.client.event.ScreenshotEvent;
@@ -67,7 +69,9 @@ public class ScrShare {
         String base64str = Base64.getEncoder().encodeToString(data);
         String url = imgurPoster(base64str);
         if(url != null) {
-            ITextComponent resultMessage = new StringTextComponent("Upload Succeed! Click URL to copy it. " + url).func_230530_a_(
+            Minecraft mc = Minecraft.getInstance();
+            mc.ingameGUI.getChatGUI().printChatMessage(new StringTextComponent("Upload Succeed! Click URL to copy it!"));
+            ITextComponent resultMessage = new StringTextComponent(url).func_230530_a_(
                     Style.field_240709_b_.func_240715_a_(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD,url)).setUnderlined(true)
             );
             event.setResultMessage(resultMessage);
