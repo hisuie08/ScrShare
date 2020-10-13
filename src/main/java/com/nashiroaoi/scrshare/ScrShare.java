@@ -67,7 +67,7 @@ public class ScrShare {
         String base64str = Base64.getEncoder().encodeToString(data);
         String url = imgurPoster(base64str);
         if(url != null) {
-            ITextComponent resultMessage = new StringTextComponent(url).func_230530_a_(
+            ITextComponent resultMessage = new StringTextComponent("Upload Succeed! Click URL to copy it. " + url).func_230530_a_(
                     Style.field_240709_b_.func_240715_a_(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD,url)).setUnderlined(true)
             );
             event.setResultMessage(resultMessage);
