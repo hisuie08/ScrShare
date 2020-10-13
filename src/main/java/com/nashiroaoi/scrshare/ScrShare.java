@@ -2,8 +2,7 @@ package com.nashiroaoi.scrshare;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
-import net.minecraft.client.Minecraft;
-import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.*;
 import net.minecraft.util.text.event.ClickEvent;
 import net.minecraftforge.client.event.ScreenshotEvent;
 import net.minecraftforge.common.MinecraftForge;
@@ -38,7 +37,6 @@ public class ScrShare {
     public static final String MOD_ID = "scrshare";
     public static final Logger LOGGER = LogManager.getLogger();
     public static final HttpClient httpclient = HttpClients.createDefault();
-    public static Minecraft mc = Minecraft.getInstance();
 
     public ScrShare() {
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::setup);
@@ -69,7 +67,10 @@ public class ScrShare {
         String base64str = Base64.getEncoder().encodeToString(data);
         String url = imgurPoster(base64str);
         if(url != null) {
-            event.setResultMessage(ITextComponent.func_244388_a(url));
+            ITextComponent resultMessage = new StringTextComponent(url).func_230530_a_(
+                    Style.field_240709_b_.func_240715_a_(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD,url)).setUnderlined(true)
+            );
+            event.setResultMessage(resultMessage);
         }
         else {
             event.setResultMessage(ITextComponent.func_244388_a("Sorry, Upload Failed. Try again later."));
@@ -102,6 +103,8 @@ public class ScrShare {
         }
     }
 }
+
+
 class Data{
     @SerializedName("link")
     @Expose
